@@ -1,14 +1,18 @@
+% Finite Difference Method 
+% of the steady Natural Convection in a square cavity
+% Created by ER Qi Yang A0164661A %
 clc; close all; clear all;
 
 % Defining parameters
-N = 61; % Number of points along x axis
+N = 121; % Number of points along x axis
 dx = 1.0 / (N - 1); % Grid spacing in x direction
-M = 61; % Number of points along y axis
+M = 121; % Number of points along y axis
 dy = 1.0 / (M - 1); % Grid spacing in y direction
-Ra = 3.5e3; % Rayleigh number
+Ra = 2.5e4; % Rayleigh number
 Pr = 0.7; % Prandtl number
-h = 0.00001; % Time step
+h = 0.000001; % Time step
 beta = 0.4; % relaxation factor for iterative methods to solve algebraic equations
+tol = 1e-3;
 
 % Initialisation at t=0 with boundary conditions
 u = zeros(N, M); % x-velocity
@@ -37,7 +41,7 @@ function rvor = resvor(vor, u, v, T, dx, dy, Pr, Ra)
             dvory1 = v(i, j) * (vor(i, j+1) - vor(i, j-1)) / (2*dy);
             dTx = (T(i+1, j) - T(i-1, j)) / (2*dx);
 
-            rvor(i, j) = (dvorx2 + dvory2) * Pr - Pr * a * dTx - dvorx1 - dvory1;
+            rvor(i, j) = (dvorx2 + dvory2) * Pr - Pr * Ra * dTx - dvorx1 - dvory1;
         end
     end
 end
@@ -73,29 +77,6 @@ function vor = solvor(beta, vor, rvor, h, dx, dy, Pr, method)
 
     if strcmp(method, 'euler')
         vor(2:N-1, 2:M-1) = vor(2:N-1, 2:M-1) + h * rvor(2:N-1, 2:M-1);
-    
-    elseif strcmp(method, 'rk4_modified')
-        vori = vor;
-
-        % 1st stage
-        vori(2:N-1, 2:M-1) = vor(2:N-1, 2:M-1) + 0.25 * h * rvor(2:N-1, 2:M-1);
-        % 2nd stage
-        rvor = resvor(vori, u, v, T, dx, dy, Pr, Ra);
-        vori(2:N-1, 2:M-1) = vor(2:N-1, 2:M-1) + (h / 3.0) * rvor(2:N-1, 2:M-1);
-        % 3rd stage
-        rvor = resvor(vori, u, v, T, dx, dy, Pr, Ra);
-        vori(2:N-1, 2:M-1) = vor(2:N-1, 2:M-1) + 0.5 * h * rvor(2:N-1, 2:M-1);
-        % 4th stage
-        rvor = resvor(vori, u, v, T, dx, dy, Pr, Ra);
-        vor(2:N-1, 2:M-1) = vor(2:N-1, 2:M-1) + h * rvor(2:N-1, 2:M-1);
-    
-    elseif strcmp(method, 'Point Jacobi')
-        a_p_vor = Pr * (2/dx^2 + 2/dy^2) + 1/h;
-        for i = 2:(N-1)
-            for j = 2:(M-1)
-                vor(i, j) = vor(i, j) + beta * rvor(i, j) / a_p_vor;
-            end
-        end
     end
 end
 
@@ -143,34 +124,26 @@ function p = BCp(p)
         p(i, M-1) = 0.25 * p(i, M-2); % Top
     end
 
-    % % Update p at the boundaries
-    % p(1, :) = 0; % Left
-    % p(N, :) = 0; % Right
-    % p(:, 1) = 0; % Bottom
-    % p(:, M) = 0; % Top
+    % Update p at the boundaries
+    p(1, :) = 0; % Left
+    p(N, :) = 0; % Right
+    p(:, 1) = 0; % Bottom
+    p(:, M) = 0; % Top
 end
 
 % Function to apply boundary conditions to vorticity
 function vor = BCvor(vor, p, dx, dy)
     [N, M] = size(vor);
     % Update vorticity at the boundaries using 2nd order approximation
-    % for j = 1:M
-    %     vor(1, j) = 3.0 * p(2, j) / (dx^2) - 0.5 * vor(2, j);
-    %     vor(N, j) = 3.0 * p(N-1, j) / (dx^2) - 0.5 * vor(N-1, j);
-    % end
-    % 
-    % % Update along the horizontal boundaries (i-loop)
-    % for i = 2:(N-1)
-    %     vor(i, 1) = 3.0 * p(i, 2) / (dy^2) - 0.5 * vor(i, 2);
-    %     vor(i, M) = 3.0 * p(i, M-1) / (dy^2) - 0.5 * vor(i, M-1);
-    % end
-    for i = 2:N-1
-        vor(i,1) = 2*p(i,2)/(dy^2);
-        vor(i,M) = 2*p(i,M-1)/(dy^2);
-    end
     for j = 1:M
-        vor(1,j) = 2*p(2,j)/(dx^2);
-        vor(N,j) = 2*p(N-1,j)/(dx^2);
+        vor(1, j) = 3.0 * p(2, j) / (dx^2) - 0.5 * vor(2, j);
+        vor(N, j) = 3.0 * p(N-1, j) / (dx^2) - 0.5 * vor(N-1, j);
+    end
+
+    % Update along the horizontal boundaries (i-loop)
+    for i = 2:(N-1)
+        vor(i, 1) = 3.0 * p(i, 2) / (dy^2) - 0.5 * vor(i, 2);
+        vor(i, M) = 3.0 * p(i, M-1) / (dy^2) - 0.5 * vor(i, M-1);
     end
 
 end  
@@ -188,13 +161,10 @@ function T = BCT(T)
         T(N, j) = (4/3) * T(N-1, j) - (1/3) * T(N-2, j);
     end
 
-    % % Update temperature at the top boundary (added: isothermal condition T=0)
-    % for i = 1:N
-    %     T(i, N) = 0.0;
-    % end
-    % for i = 2:N-1
-    %     T(i, 1) = 0.5 * cos(pi * (i-1) / (N-1)) + 1;
-    % end
+    % Update temperature at the top boundary (added: isothermal condition T=0)
+    for i = 1:N
+        T(i, N) = 0.0;
+    end
 end
 
 % Function to calculate velocity components from stream function
@@ -214,12 +184,6 @@ function [u, v, T] = caluv(T, u, v, p, dx, dy)
         u(i, M) = 0;
         v(i, M) = 0;
     end
-    for i = 1:N
-        T(i, N) = 0.0;
-    end
-    for i = 2:N-1
-        T(i, 1) = 0.5 * cos(pi * (i-1) / (N-1)) + 1;
-    end
 
     % Update velocity components based on stream function
     for i = 2:(N-1)
@@ -232,6 +196,10 @@ end
 
 % Initialise errors for convergence check
 iter_no = 0;
+errp_list = [];
+errvor_list = [];
+errT_list = [];
+iter_list = [];
 
 % Start timer
 tic;
@@ -269,13 +237,18 @@ while true
     errvor = sqrt(sum(sum(rvor.^2)));
     errp = sqrt(sum(sum(rp.^2)));
     errT = sqrt(sum(sum(rT.^2)));
+    errp_list(end+1) = errp;
+    errvor_list(end+1) = errvor;
+    errT_list(end+1) = errT;
+    iter_list(end+1) = iter_no;
+
 
     if mod(iter_no, 100) == 0
         fprintf('Iteration number %d, errp: %f, errvor: %f, errT: %f\n', iter_no, errp, errvor, errT);
     end
 
         % Check convergence
-    if errp < 1e-3 && errvor < 1e-3 && errT < 1e-3
+    if errp < tol && errvor < tol && errT < tol
         converged = true;
         fprintf('Converged at iteration %d: errp = %f, errvor = %f, errT = %f\n', iter_no, errp, errvor, errT);
         break;
@@ -323,6 +296,18 @@ colorbar;
 title('Y-velocity Contours');
 xlabel('x');
 ylabel('y');
+
+figure;
+semilogy(iter_list, errp_list, 'r', 'LineWidth', 1.5); hold on;
+semilogy(iter_list, errvor_list, 'b', 'LineWidth', 1.5);
+semilogy(iter_list, errT_list, 'g', 'LineWidth', 1.5);
+grid on;
+
+title('Finite Difference Method with $61 \times 61$ grid and $Ra = 2.5 \times 10^4$', 'Interpreter', 'latex');
+xlabel('Iteration Number');
+ylabel('Residual (log scale)');
+legend('Streamfunction Residual', 'Vorticity Residual', 'Temperature Residual', 'Location', 'best');
+
 
 % --- Inputs ---
 % u, v: Velocity fields (size NxM)
