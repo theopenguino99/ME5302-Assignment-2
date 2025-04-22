@@ -1,5 +1,1 @@
-# Ignore all .m files
-*.m
-
-# Include only files with FiniteDifference in their name
-!*FiniteDifference*.m
+debugging/

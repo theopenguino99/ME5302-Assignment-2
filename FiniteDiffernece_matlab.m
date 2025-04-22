@@ -1,5 +1,4 @@
-% Importing dependencies
-% (No explicit imports needed in MATLAB)
+clc; close all; clear all;
 
 % Defining parameters
 N = 61; % Number of points along x axis
@@ -21,7 +20,7 @@ rvor = zeros(N, M); % Residual vorticity
 p = zeros(N, M); % Stream function initialised to be 0
 rp = zeros(N, M); % Residual stream function
 
-% Boundary condition for temperature - note the +1 for MATLAB indexing
+% Boundary condition for temperature
 for i = 1:N
     T(i, 1) = 0.5 * cos(pi * (i-1) / (N-1)) + 1; % Bottom boundary condition of T = 0.5cos(pi*x)+1
 end
@@ -38,7 +37,7 @@ function rvor = resvor(vor, u, v, T, dx, dy, Pr, Ra)
             dvory1 = v(i, j) * (vor(i, j+1) - vor(i, j-1)) / (2*dy);
             dTx = (T(i+1, j) - T(i-1, j)) / (2*dx);
 
-            rvor(i, j) = (dvorx2 + dvory2) * Pr + Pr * Ra * dTx - dvorx1 - dvory1;
+            rvor(i, j) = (dvorx2 + dvory2) * Pr - Pr * a * dTx - dvorx1 - dvory1;
         end
     end
 end
@@ -60,7 +59,7 @@ function rtemp = restemp(T, u, v, dx, dy)
 end
 
 % Function to solve temperature field
-function T = solT(T, rT, h, dx, dy, method)
+function T = solT(T, rT, h, method)
     [N, M] = size(T);
     
     if strcmp(method, 'euler')
@@ -107,7 +106,9 @@ function rp = resp(p, vor, dx, dy)
     
     for i = 3:(N-2)
         for j = 3:(M-2)
-            rp(i, j) = vor(i, j) - ((p(i+1, j) - 2*p(i, j) + p(i-1, j)) / (dx^2) - (p(i, j+1) - 2*p(i, j) + p(i, j-1)) / (dy^2));
+            rp(i, j) = vor(i, j) ...
+                - (p(i+1, j) - 2*p(i, j) + p(i-1, j)) / (dx^2) ...
+                - (p(i, j+1) - 2*p(i, j) + p(i, j-1)) / (dy^2);
         end
     end
 end
@@ -256,7 +257,7 @@ while true
 
     % Compute residual temperature and update temperature
     rT = restemp(T, u, v, dx, dy);
-    T = solT(T, rT, h, dx, dy, 'euler');
+    T = solT(T, rT, h, 'euler');
 
     % Update Temperature field
     T = BCT(T);
