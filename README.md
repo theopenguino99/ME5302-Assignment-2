@@ -63,12 +63,12 @@ The solver uses the non-dimensional vorticity-streamfunction formulation:
 | Max v-velocity     | 50.08 m/s           | x = 0.1250       |
 | Avg Nusselt (y=0)  | 3.391               | -                |
 
-![Ra=2.5e4 Results](121x121_Ra2.5e4_convergence_contour.png)
+![Ra=2.5e4 Results](121x121_Ra2.5e4_convergence_contour_tol1e-4.png)
 
 ## Getting Started
 ### Prerequisites
 - Python 3.8+ with NumPy, Matplotlib
-- MATLAB R2021a+ (optional)
+- MATLAB R2021a+
 
 ### Running the Code
 1. Clone the repository:
