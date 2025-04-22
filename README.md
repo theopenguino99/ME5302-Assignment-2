@@ -7,10 +7,7 @@ This project implements a **Finite Difference Method (FDM)** solver for simulati
 - [Mathematical Formulation](#mathematical-formulation)
 - [Numerical Methods](#numerical-methods)
 - [Results](#results)
-- [Getting Started](#getting-started)
-- [Repository Structure](#repository-structure)
-- [License](#license)
-- [References](#references)
+
 
 ## Project Description
 The solver investigates natural convection phenomena in a square cavity with:
